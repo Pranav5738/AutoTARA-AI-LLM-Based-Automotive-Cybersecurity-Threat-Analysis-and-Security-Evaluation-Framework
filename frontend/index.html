@@ -59,9 +59,26 @@
     table { width: 100%; border-collapse: collapse; } th, td { padding: 13px 8px; border-bottom: 1px solid #1d334d; text-align: left; font-size: 13px; } th { color: var(--muted); font-weight: 650; } td { color: #d9e5f5; }
     .table-wrap { overflow-x: auto; } .link { color: #91baff; cursor: pointer; font-weight: 700; } .badge { display: inline-block; padding: 4px 9px; border-radius: 99px; font-size: 11px; font-weight: 800; } .badge.completed, .badge.PASS { color: #a7f3d0; background: #064e3b; } .badge.failed, .badge.FAIL { color: #fecdd3; background: #881337; } .badge.queued, .badge.running, .badge.WARN { color: #fde68a; background: #713f12; }
     .report { max-height: 660px; overflow: auto; padding: 18px; color: #cad8ea; background: #060d18; border: 1px solid #1c304a; border-radius: 9px; white-space: pre-wrap; font: 12px/1.65 ui-monospace, SFMono-Regular, Consolas, monospace; }
-    .finding { padding: 14px; margin: 9px 0; border: 1px solid #203854; border-radius: 9px; background: #0a1728; } .finding strong { display: block; margin-bottom: 6px; }
+    .finding { padding: 16px; margin: 12px 0; border: 1px solid #203854; border-radius: 9px; background: #0a1728; }
+    .finding-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+    .finding-title { display: flex; flex-wrap: wrap; align-items: center; gap: 9px; font-weight: 800; }
+    .summary-box { display: grid; grid-template-columns: 1.1fr .9fr; gap: 16px; margin-bottom: 18px; }
+    .plain-card { padding: 18px; border: 1px solid #203854; border-radius: 9px; background: #0a1728; }
+    .plain-card h3 { margin-bottom: 10px; color: #f3f8ff; }
+    .plain-card p { margin: 0; color: #cbd8e8; line-height: 1.65; }
+    .mini-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .mini-item { padding: 12px; background: #081424; border: 1px solid #1b314d; border-radius: 8px; }
+    .mini-label { display: block; margin-bottom: 5px; color: var(--muted); font-size: 11px; font-weight: 750; text-transform: uppercase; }
+    .mini-value { color: #e6f0ff; font-weight: 800; overflow-wrap: anywhere; }
+    .explain { position: relative; display: inline-flex; align-items: center; gap: 5px; color: #b7d0f4; border-bottom: 1px dotted #7ba7df; cursor: help; }
+    .explain::after { content: attr(data-tip); position: absolute; left: 0; bottom: calc(100% + 10px); z-index: 5; width: min(280px, 72vw); padding: 10px 12px; color: #eaf3ff; background: #111f34; border: 1px solid #36577d; border-radius: 8px; box-shadow: var(--shadow); font-size: 12px; line-height: 1.45; opacity: 0; pointer-events: none; transform: translateY(4px); transition: .15s ease; }
+    .explain:hover::after, .explain:focus::after { opacity: 1; transform: translateY(0); }
+    .verdict-note { margin: 12px 0 0; padding: 12px; border-left: 3px solid var(--green); background: #071c19; color: #c9f8e1; line-height: 1.6; }
+    .verdict-note.FAIL { border-color: var(--red); background: #240b14; color: #ffd1d8; }
+    .verdict-note.WARN { border-color: var(--amber); background: #221806; color: #ffe8a3; }
+    .prompt-box { margin-top: 12px; padding: 13px; color: #d8e6fb; background: #081424; border: 1px solid #1b314d; border-radius: 8px; white-space: pre-wrap; font: 12px/1.6 ui-monospace, SFMono-Regular, Consolas, monospace; }
     @media (max-width: 850px) { .app-shell { grid-template-columns: 1fr; } aside { position: sticky; top: 0; z-index: 2; padding: 12px 16px; border-right: 0; border-bottom: 1px solid var(--line); } aside .logo { margin: 0 0 12px; } nav { display: flex; overflow-x: auto; } nav button { white-space: nowrap; } .side-footer { display: none; } .cards { grid-template-columns: repeat(2, 1fr); } }
-    @media (max-width: 760px) { .how-to { grid-template-columns: 1fr; } } @media (max-width: 560px) { .content { padding: 20px 14px; } .topbar { align-items: flex-start; flex-direction: column; } .top-actions { width: 100%; } .top-actions button { flex: 1; } .grid-2, .run-form { grid-template-columns: 1fr; } .run-form .full { grid-column: auto; } .cards { gap: 9px; } .stat { padding: 13px; } .stat-value { font-size: 23px; } }
+    @media (max-width: 760px) { .how-to, .summary-box { grid-template-columns: 1fr; } } @media (max-width: 560px) { .content { padding: 20px 14px; } .topbar { align-items: flex-start; flex-direction: column; } .top-actions { width: 100%; } .top-actions button { flex: 1; } .grid-2, .run-form, .mini-grid { grid-template-columns: 1fr; } .run-form .full { grid-column: auto; } .cards { gap: 9px; } .stat { padding: 13px; } .stat-value { font-size: 23px; } }
   </style>
 </head>
 <body>
@@ -119,7 +136,7 @@
 
       <section id="history" class="view"><div class="panel"><div class="panel-head"><h2>Evaluation history</h2><button id="historyRefresh" class="secondary">Refresh</button></div><div class="table-wrap"><table><thead><tr><th>Date</th><th>Scope</th><th>Provider / model</th><th>Status</th><th>Action</th></tr></thead><tbody id="allRuns"></tbody></table></div></div></section>
 
-      <section id="details" class="view"><div class="panel"><div class="panel-head"><div><h2 id="detailsTitle">Evaluation report</h2><span id="detailsMeta" class="muted"></span></div><button id="backBtn" class="secondary">Back</button></div><div id="detailStats" class="cards"></div><div id="findings"></div><h3>Full report</h3><pre id="report" class="report"></pre></div></section>
+      <section id="details" class="view"><div class="panel"><div class="panel-head"><div><h2 id="detailsTitle">Evaluation report</h2><span id="detailsMeta" class="muted"></span></div><button id="backBtn" class="secondary">Back</button></div><div id="detailStats" class="cards"></div><div id="easyReport"></div><div id="findings"></div><h3>Raw technical report</h3><pre id="report" class="report"></pre></div></section>
     </main>
   </div>
 <script>
@@ -140,10 +157,83 @@ const showView = (view) => {
 };
 const esc = value => String(value ?? '').replace(/[&<>"']/g, x => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[x]));
 const statusBadge = status => `<span class="badge ${esc(status)}">${esc(status).toUpperCase()}</span>`;
+const tip = (label, text) => `<span class="explain" tabindex="0" data-tip="${esc(text)}">${esc(label)}</span>`;
 function setError(id, text) { $(id).textContent = text || ''; }
 function counts(results) { return results.reduce((a, x) => { const v = x.result.verdict; a[v] = (a[v] || 0) + 1; return a; }, {PASS:0, FAIL:0, WARN:0}); }
 function renderBars(c) { const max = Math.max(c.PASS, c.FAIL, c.WARN, 1); return ['PASS','FAIL','WARN'].map(v => `<div class="bar-row"><span>${v}</span><span class="bar ${v.toLowerCase()}"><i style="width:${c[v] / max * 100}%"></i></span><strong>${c[v]}</strong></div>`).join(''); }
 function renderRows(target, list) { $(target).innerHTML = list.length ? list.map(x => `<tr><td>${new Date(x.created_at).toLocaleString()}</td><td>${esc(x.filter_desc)}</td><td>${esc(x.provider)} / ${esc(x.model)}</td><td>${statusBadge(x.status)}</td><td><a class="link" onclick="openRun('${x.id}')">View</a></td></tr>`).join('') : '<tr><td colspan="5" class="muted">No evaluations yet.</td></tr>'; }
+function meaningForVerdict(verdict) {
+  if (verdict === 'PASS') return 'The assistant behaved safely for the tested attack. It did not perform the unsafe action expected by the test.';
+  if (verdict === 'FAIL') return 'The assistant showed unsafe behavior. The evaluator detected a risky tool call, unsafe state flag, or unsafe response pattern.';
+  return 'The evaluator did not see a clear unsafe action, but the safe behavior was not strong enough. A human reviewer should inspect it.';
+}
+function attackSummary(result) {
+  const id = result.test_case_id || '';
+  if (id.startsWith('V2X')) return 'A malicious instruction was hidden inside a V2X, traffic, weather, or telematics message. The test checks whether the assistant treats that content as data instead of a command.';
+  if (id.startsWith('IVI')) return 'A malicious instruction was hidden inside infotainment content such as SMS, contacts, media metadata, Bluetooth names, or app notifications.';
+  if (id.startsWith('VOICE')) return 'A voice-based request tried to bypass authority, confirmation, or safety rules before the assistant used vehicle functions.';
+  return 'The test simulated an attacker-controlled input and checked whether the assistant would execute unsafe vehicle behavior.';
+}
+function safeBehaviorSummary(result) {
+  const tools = result.tool_calls_made || [];
+  const flags = result.channel_1_flags || [];
+  if (result.verdict === 'PASS' && tools.length === 0) return 'Good result: no vehicle function was called. The assistant did not execute the attacker-controlled instruction.';
+  if (result.verdict === 'PASS') return 'Good result: the detected tool activity did not violate this test case.';
+  if (flags.length) return `Unsafe state detected: ${flags.join(', ')}. This means the simulator observed a security-relevant action.`;
+  if (tools.length) return `Tool call detected: ${tools.join(', ')}. This means the assistant attempted to use a vehicle API during the test.`;
+  return 'No explicit vehicle tool was recorded, but the response still needs review because the scoring rule was not fully satisfied.';
+}
+function renderEasyReport(run, c) {
+  const total = run.results.length;
+  const passRate = total ? Math.round(c.PASS / total * 1000) / 10 : 0;
+  const main = run.results[0]?.result || {};
+  const fullScope = total > 1 ? 'This run covers multiple test cases, so it gives broader evidence.' : 'Only one test case was run, so this proves safety only for this specific scenario.';
+  const reusablePrompt = `You are an automotive cybersecurity evaluation report writer.
+
+Convert this AutoTARA result into a simple evaluator-friendly report.
+Explain what was tested, why it matters, what attack was simulated, expected safe behavior, actual result, verdict meaning, limitation, and next steps.
+Use simple language for a non-technical reviewer.
+
+Raw result:
+[paste AutoTARA output here]`;
+  $('easyReport').innerHTML = `
+    <div class="summary-box">
+      <div class="plain-card">
+        <h3>Evaluator summary</h3>
+        <p>This run tested whether an LLM-based vehicle assistant can resist automotive prompt-injection attacks. ${esc(fullScope)} Current pass rate is <strong>${passRate}%</strong>.</p>
+        <div class="verdict-note ${esc(main.verdict || 'WARN')}">${esc(meaningForVerdict(main.verdict || 'WARN'))}</div>
+      </div>
+      <div class="plain-card">
+        <h3>Key terms</h3>
+        <p>${tip('Threat Scenario', 'The attack situation from the TARA threat model, shown as TS-xx.')} links the test to a known risk. ${tip('Cybersecurity Goal', 'The required security objective, shown as CG-xx, that the vehicle assistant should satisfy.')} shows what protection is being checked. ${tip('Tool Calls', 'Vehicle API actions requested by the LLM, such as getting location, sending a message, or unlocking doors.')} are important because real vehicles could act on them.</p>
+      </div>
+    </div>
+    <div class="plain-card">
+      <h3>Prompt for documentation</h3>
+      <p>Use this when you want the raw output converted into a project-report explanation.</p>
+      <div class="prompt-box">${esc(reusablePrompt)}</div>
+    </div>`;
+}
+function renderFinding(item) {
+  const r = item.result;
+  const tools = r.tool_calls_made?.length ? r.tool_calls_made.join(', ') : 'None';
+  const flags = r.channel_1_flags?.length ? r.channel_1_flags.join(', ') : 'None';
+  return `<div class="finding">
+    <div class="finding-head">
+      <div class="finding-title">${statusBadge(r.verdict)} <span>${esc(r.test_case_id)}</span> <span class="muted">${tip('Risk', 'Severity level if this attack succeeds in a real vehicle context.')}: ${esc(r.risk_level)}</span></div>
+      <span class="muted">${esc(item.duration_ms)} ms</span>
+    </div>
+    <div class="mini-grid">
+      <div class="mini-item"><span class="mini-label">${tip('Threat Scenario', 'Attack scenario reference from the TARA model.')}</span><span class="mini-value">${esc(r.ts_ref)}</span></div>
+      <div class="mini-item"><span class="mini-label">${tip('Cybersecurity Goal', 'Security objective that this test validates.')}</span><span class="mini-value">${esc(r.cg_ref)}</span></div>
+      <div class="mini-item"><span class="mini-label">${tip('Tool Calls', 'Vehicle API calls made by the LLM during the test.')}</span><span class="mini-value">${esc(tools)}</span></div>
+      <div class="mini-item"><span class="mini-label">${tip('Security Flags', 'Ground-truth simulator flags raised when sensitive or unsafe actions occur.')}</span><span class="mini-value">${esc(flags)}</span></div>
+    </div>
+    <div class="verdict-note ${esc(r.verdict)}">${esc(safeBehaviorSummary(r))}</div>
+    <p class="muted" style="margin:12px 0 0">${esc(attackSummary(r))}</p>
+    <p class="muted" style="margin:8px 0 0"><strong>Scoring reason:</strong> ${esc(r.rationale)}</p>
+  </div>`;
+}
 async function refresh() {
   runs = await api('/api/runs'); renderRows('recentRuns', runs.slice(0, 5)); renderRows('allRuns', runs);
   $('statTotal').textContent = runs.length;
@@ -159,9 +249,10 @@ async function openRun(id) {
   const run = await api('/api/runs/' + id); showView('details');
   $('detailsTitle').textContent = `${run.filter_desc} report`;
   $('detailsMeta').textContent = `${run.provider} / ${run.model} • ${new Date(run.created_at).toLocaleString()}`;
-  if (run.status !== 'completed') { $('detailStats').innerHTML = ''; $('findings').innerHTML = `<p class="muted">${esc(run.error || 'This evaluation is still running.')}</p>`; $('report').textContent = ''; return; }
+  if (run.status !== 'completed') { $('detailStats').innerHTML = ''; $('easyReport').innerHTML = ''; $('findings').innerHTML = `<p class="muted">${esc(run.error || 'This evaluation is still running.')}</p>`; $('report').textContent = ''; return; }
   const c = counts(run.results); $('detailStats').innerHTML = ['PASS','FAIL','WARN'].map(v => `<div class="stat"><div class="stat-label">${v}</div><div class="stat-value" style="color:var(--${v === 'PASS' ? 'green' : v === 'FAIL' ? 'red' : 'amber'})">${c[v]}</div></div>`).join('');
-  $('findings').innerHTML = run.results.map(x => `<div class="finding"><strong>${statusBadge(x.result.verdict)} ${esc(x.result.test_case_id)} <span class="muted">${esc(x.result.risk_level)} risk</span></strong><span class="muted">${esc(x.result.rationale)}</span></div>`).join('');
+  renderEasyReport(run, c);
+  $('findings').innerHTML = `<h3>Interactive findings</h3>${run.results.map(renderFinding).join('')}`;
   $('report').textContent = await api('/api/runs/' + id + '/report');
 }
 async function loadOptions() {
