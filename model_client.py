@@ -25,46 +25,63 @@ class ModelClientError(RuntimeError):
     """Raised when a configured model provider cannot complete a request."""
 
 
-def _tool_calls_from_openai(message: dict[str, Any]) -> list[Any]:
-    calls = []
-    for call in message.get("tool_calls") or []:
-        function = call.get("function", {})
-        try:
-            arguments = json.loads(function.get("arguments") or "{}")
-        except json.JSONDecodeError as exc:
-            raise ModelClientError(f"Invalid tool arguments from model: {exc}") from exc
-        calls.append(SimpleNamespace(
-            id=call.get("id"),
-            function=SimpleNamespace(
-                name=function.get("name", ""),
-                arguments=arguments,
-            )
-        ))
-    return calls
+def _native_contents(messages: list[dict[str, Any]]) -> tuple[str, list[dict[str, Any]]]:
+    system = ""
+    contents = []
+    call_names: dict[str, str] = {}
+    for message in messages:
+        role = message["role"]
+        if role == "system":
+            system += f"{message.get('content') or ''}\n"
+            continue
+        if role == "tool":
+            call_id = message.get("tool_call_id")
+            name = call_names.get(call_id) if call_id else "tool"
+            name = name or call_id or "tool"
+            contents.append({
+                "role": "user",
+                "parts": [{"functionResponse": {
+                    "name": name,
+                    "response": {"result": message.get("content") or ""},
+                }}],
+            })
+            continue
+
+        parts = []
+        content = message.get("content") or ""
+        if content:
+            parts.append({"text": content})
+        if role == "assistant":
+            native_role = "model"
+            for index, call in enumerate(message.get("tool_calls") or []):
+                call_id = getattr(call, "id", None) or f"call_{index}"
+                name = call.function.name
+                call_names[call_id] = name
+                parts.append({"functionCall": {
+                    "name": name,
+                    "args": call.function.arguments or {},
+                }})
+        else:
+            native_role = "user"
+        contents.append({"role": native_role, "parts": parts or [{"text": ""}]})
+    return system.strip(), contents
 
 
-def _normalize_message(message: dict[str, Any]) -> dict[str, Any]:
-    role = message["role"]
-    normalized = {"role": role, "content": message.get("content") or ""}
-    if role == "assistant" and message.get("tool_calls"):
-        normalized["tool_calls"] = [
-            {
-                "id": getattr(call, "id", None) or f"call_{index}",
-                "type": "function",
-                "function": {
-                    "name": call.function.name,
-                    "arguments": json.dumps(call.function.arguments or {}),
-                },
-            }
-            for index, call in enumerate(message["tool_calls"])
-        ]
-    if role == "tool" and message.get("tool_call_id"):
-        normalized["tool_call_id"] = message["tool_call_id"]
-    return normalized
+def _native_tools(tools: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    if not tools:
+        return []
+    return [{"functionDeclarations": [
+        {
+            "name": tool["function"]["name"],
+            "description": tool["function"].get("description", ""),
+            "parameters": tool["function"].get("parameters", {}),
+        }
+        for tool in tools
+    ]}]
 
 
 class GeminiClient:
-    """Small OpenAI-compatible Gemini client using only the Python standard library."""
+    """Small native Gemini client using only the Python standard library."""
 
     def __init__(self, api_key: str, model: str, timeout: int = 120) -> None:
         self.api_key = api_key
@@ -73,27 +90,20 @@ class GeminiClient:
 
     def chat(self, *, model: str, messages: list[dict], tools: list[dict]) -> Any:
         del model
-        system = next((m["content"] for m in messages if m["role"] == "system"), "")
-        payload_messages = [
-            _normalize_message(message)
-            for message in messages
-            if message["role"] != "system"
-        ]
-        payload = {
-            "model": self.model,
-            "messages": payload_messages,
-            "tools": tools,
-            "tool_choice": "auto",
-        }
+        system, contents = _native_contents(messages)
+        payload: dict[str, Any] = {"contents": contents}
         if system:
-            payload["messages"].insert(0, {"role": "system", "content": system})
+            payload["systemInstruction"] = {"parts": [{"text": system}]}
+        native_tools = _native_tools(tools)
+        if native_tools:
+            payload["tools"] = native_tools
 
         request = urllib.request.Request(
-            "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+            f"https://generativelanguage.googleapis.com/v1beta/models/{self.model}:generateContent",
             data=json.dumps(payload).encode("utf-8"),
             headers={
                 "Content-Type": "application/json",
-                "Authorization": f"Bearer {self.api_key}",
+                "x-goog-api-key": self.api_key,
             },
             method="POST",
         )
@@ -105,13 +115,25 @@ class GeminiClient:
             raise ModelClientError(f"Gemini request failed: {details}") from exc
 
         try:
-            message = data["choices"][0]["message"]
+            parts = data["candidates"][0]["content"].get("parts", [])
         except (KeyError, IndexError, TypeError) as exc:
             raise ModelClientError(f"Unexpected Gemini response: {data}") from exc
 
+        text_parts = [part["text"] for part in parts if part.get("text")]
+        tool_calls = []
+        for index, part in enumerate(parts):
+            function_call = part.get("functionCall")
+            if function_call:
+                tool_calls.append(SimpleNamespace(
+                    id=f"call_{index}",
+                    function=SimpleNamespace(
+                        name=function_call.get("name", ""),
+                        arguments=function_call.get("args") or {},
+                    ),
+                ))
         return SimpleNamespace(message=SimpleNamespace(
-            content=message.get("content") or "",
-            tool_calls=_tool_calls_from_openai(message),
+            content="".join(text_parts),
+            tool_calls=tool_calls,
         ))
 
 
