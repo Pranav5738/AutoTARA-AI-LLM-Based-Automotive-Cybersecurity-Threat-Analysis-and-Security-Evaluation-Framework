@@ -16,7 +16,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from evaluator import DEFAULT_TIMEOUT_SEC, generate_report, run_one
-from model_client import create_model_client
+from model_client import CURRENT_GEMINI_MODEL, create_model_client, normalize_model_name
 from yaml_loader import get_all_prompts, get_prompt_by_id, get_prompts_by_suite, load_test_suites
 
 load_dotenv()
@@ -134,6 +134,7 @@ def select_prompts(request: RunRequest) -> tuple[list[Any], str]:
 def run_job(run_id: str, request: RunRequest) -> None:
     try:
         execute("UPDATE runs SET status=? WHERE id=?", ("running", run_id))
+        request.model = normalize_model_name(request.provider, request.model)
         prompts, filter_desc = select_prompts(request)
         client = create_model_client(request.provider, request.model, request.timeout)
         run_results = [
@@ -190,7 +191,10 @@ def options() -> dict[str, Any]:
     return {
         "providers": ["gemini", "ollama"],
         "default_provider": os.getenv("MODEL_PROVIDER", "gemini"),
-        "default_model": os.getenv("MODEL_NAME", "gemini-3.8-flash"),
+        "default_model": normalize_model_name(
+            os.getenv("MODEL_PROVIDER", "gemini"),
+            os.getenv("MODEL_NAME", CURRENT_GEMINI_MODEL),
+        ),
         "suites": [{"id": suite.id, "name": suite.name} for suite in suites],
         "cases": [{"id": case.id, "name": case.name, "risk_level": case.risk_level.value} for case in cases],
     }

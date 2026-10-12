@@ -12,6 +12,14 @@ import ollama
 
 load_dotenv()
 
+CURRENT_GEMINI_MODEL = "gemini-3.8-flash"
+
+
+def normalize_model_name(provider: str, model: str) -> str:
+    if provider == "gemini" and model in {"gemini-2.0-flash", "models/gemini-2.0-flash"}:
+        return CURRENT_GEMINI_MODEL
+    return model
+
 
 class ModelClientError(RuntimeError):
     """Raised when a configured model provider cannot complete a request."""
@@ -108,6 +116,7 @@ class GeminiClient:
 
 
 def create_model_client(provider: str, model: str, timeout: int = 120) -> Any:
+    model = normalize_model_name(provider, model)
     if provider == "ollama":
         return ollama.Client(
             host=os.getenv("OLLAMA_HOST", "http://127.0.0.1:11434"),
