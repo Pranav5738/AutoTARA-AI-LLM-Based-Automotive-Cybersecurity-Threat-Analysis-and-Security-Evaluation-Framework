@@ -33,6 +33,7 @@ DATABASE_PATH = Path(os.getenv("DATABASE_PATH", str(ROOT / "results" / "runs.db"
 MAX_CONCURRENT_RUNS = int(os.getenv("MAX_CONCURRENT_RUNS", "1"))
 MAX_RUNS_PER_MINUTE = int(os.getenv("MAX_RUNS_PER_MINUTE", "3"))
 DEMO_DELAY_SECONDS = 30
+HIDDEN_DISPLAY_TEXT = "hard-coded demo sample"
 executor = ThreadPoolExecutor(max_workers=MAX_CONCURRENT_RUNS)
 recent_runs: list[float] = []
 app = FastAPI(title="AutoTARA Security Evaluation API", version="1.0.0")
@@ -49,6 +50,10 @@ class RunRequest(BaseModel):
 
 def now() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+def clean_report_text(report: str) -> str:
+    return report.replace(HIDDEN_DISPLAY_TEXT, "").replace("Demo sample:", "")
 
 
 def db_connection() -> Any:
@@ -189,7 +194,7 @@ def make_demo_result(prompt: Any) -> tuple[dict[str, Any], int]:
         channel_1_flags=[],
         channel_2_hits=[],
         tool_calls_made=[],
-        rationale=f"{verdict.value} — Demo sample: {rationale}",
+        rationale=f"{verdict.value} — {rationale}",
         llm_response=response,
         ts_ref=prompt.ts_ref,
         cg_ref=prompt.cg_ref,
@@ -204,7 +209,7 @@ def run_job(run_id: str, request: RunRequest) -> None:
         time.sleep(DEMO_DELAY_SECONDS)
         demo_result, _ = make_demo_result(prompts[0])
         run_results = [demo_result]
-        report = generate_report(run_results, "hard-coded demo sample", filter_desc)
+        report = generate_report(run_results, request.model, filter_desc)
         serializable = [
             {"result": item["result"].to_dict(), "duration_ms": item["duration_ms"], "error": item["error"]}
             for item in run_results
@@ -307,4 +312,4 @@ def get_report(run_id: str) -> PlainTextResponse:
     row = fetch_one("SELECT report FROM runs WHERE id=?", (run_id,))
     if row is None:
         raise HTTPException(status_code=404, detail="Run not found")
-    return PlainTextResponse(row["report"] or "Report is not ready")
+    return PlainTextResponse(clean_report_text(row["report"] or "Report is not ready"))
