@@ -105,7 +105,7 @@
             <div class="full"><button id="runBtn" class="primary">Start evaluation</button><span id="runMessage" class="status-line" style="display:inline-flex;margin-left:12px"></span></div>
           </div>
         </div>
-        <div id="progressPanel" class="panel hidden"><div class="panel-head"><h2>Evaluation progress</h2><span id="progressBadge" class="badge running">QUEUED</span></div><div class="status-line"><span id="progressDot" class="dot queued"></span><span id="progressText">Waiting for worker...</span></div><div class="bar" style="margin-top:17px"><i id="progressBar" style="width:10%"></i></div></div>
+        <div id="progressPanel" class="panel hidden"><div class="panel-head"><h2>Evaluation progress</h2><span id="progressBadge" class="badge running">RUNNING</span></div><div class="status-line"><span id="progressDot" class="dot running"></span><span id="progressText">Starting evaluation...</span></div><div class="bar" style="margin-top:17px"><i id="progressBar" style="width:0%"></i></div></div>
       </section>
 
       <section id="history" class="view"><div class="panel"><div class="panel-head"><h2>Evaluation history</h2><button id="historyRefresh" class="secondary">Refresh</button></div><div class="table-wrap"><table><thead><tr><th>Date</th><th>Scope</th><th>Provider / model</th><th>Status</th><th>Action</th></tr></thead><tbody id="allRuns"></tbody></table></div></div></section>
@@ -115,7 +115,7 @@
   </div>
 <script>
 const $ = id => document.getElementById(id);
-let runs = [], activeRunId = null, pollTimer = null;
+let runs = [], activeRunId = null, pollTimer = null, countdownTimer = null, runStartedAt = 0;
 const api = async (url, options = {}) => {
   options.headers = {...(options.headers || {})};
   const response = await fetch(url, options);
@@ -165,8 +165,9 @@ document.querySelectorAll('nav button').forEach(x => x.onclick = () => showView(
 document.querySelectorAll('[data-view-link]').forEach(x => x.onclick = () => showView(x.dataset.viewLink));
 $('backBtn').onclick = () => showView('history'); $('refreshBtn').onclick = refresh; $('historyRefresh').onclick = refresh;
 $('selection').onchange = () => { $('suiteWrap').classList.toggle('hidden', $('selection').value !== 'suite'); $('caseWrap').classList.toggle('hidden', $('selection').value !== 'case'); };
-$('runBtn').onclick = async () => { $('runBtn').disabled = true; $('progressPanel').classList.remove('hidden'); const selection = $('selection').value; const body = {provider:$('provider').value, model:$('model').value}; if (selection === 'suite') body.suite = $('suite').value; if (selection === 'case') body.test_case_id = $('case').value; try { const run = await api('/api/runs', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)}); activeRunId = run.id; $('runMessage').textContent = 'Evaluation queued'; poll(); } catch (e) { $('runMessage').textContent = e.message; $('runBtn').disabled = false; } };
-async function poll() { if (!activeRunId) return; const run = await api('/api/runs/' + activeRunId); $('progressBadge').textContent = run.status.toUpperCase(); $('progressBadge').className = 'badge ' + run.status; $('progressDot').className = 'dot ' + run.status; $('progressText').textContent = run.status === 'completed' ? 'Evaluation complete.' : run.status === 'failed' ? run.error : run.status === 'running' ? 'Worker is evaluating test cases...' : 'Waiting for worker...'; $('progressBar').style.width = run.status === 'completed' || run.status === 'failed' ? '100%' : run.status === 'running' ? '60%' : '15%'; await refresh(); if (run.status === 'completed' || run.status === 'failed') { $('runBtn').disabled = false; if (run.status === 'completed') openRun(run.id); return; } pollTimer = setTimeout(poll, 2500); }
+$('runBtn').onclick = async () => { $('runBtn').disabled = true; $('progressPanel').classList.remove('hidden'); const selection = $('selection').value; const body = {provider:$('provider').value, model:$('model').value}; if (selection === 'suite') body.suite = $('suite').value; if (selection === 'case') body.test_case_id = $('case').value; try { const run = await api('/api/runs', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)}); activeRunId = run.id; runStartedAt = Date.now(); $('runMessage').textContent = 'Evaluation running'; updateCountdown(); poll(); } catch (e) { $('runMessage').textContent = e.message; $('runBtn').disabled = false; } };
+function updateCountdown() { const elapsed = Math.floor((Date.now() - runStartedAt) / 1000); const remaining = Math.max(0, 30 - elapsed); $('progressText').textContent = remaining ? `Running demo evaluation — ${remaining}s remaining...` : 'Finalizing result...'; $('progressBar').style.width = `${Math.min(100, elapsed / 30 * 100)}%`; if (remaining) countdownTimer = setTimeout(updateCountdown, 250); }
+async function poll() { if (!activeRunId) return; const run = await api('/api/runs/' + activeRunId); $('progressBadge').textContent = run.status.toUpperCase(); $('progressBadge').className = 'badge ' + run.status; $('progressDot').className = 'dot ' + run.status; if (run.status === 'completed') { $('progressText').textContent = 'Evaluation complete — showing one sample output.'; $('progressBar').style.width = '100%'; clearTimeout(countdownTimer); } else if (run.status === 'failed') { $('progressText').textContent = run.error; $('progressBar').style.width = '100%'; clearTimeout(countdownTimer); } await refresh(); if (run.status === 'completed' || run.status === 'failed') { $('runBtn').disabled = false; if (run.status === 'completed') openRun(run.id); return; } pollTimer = setTimeout(poll, 1000); }
 loadOptions().catch(e => $('runMessage').textContent = e.message);
 </script>
 </body>
