@@ -83,9 +83,36 @@
     .term-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
     .term-card { padding: 12px; background: #081424; border: 1px solid #1b314d; border-radius: 8px; }
     .term-card p { margin-top: 5px; font-size: 13px; }
+    .report-hero { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 24px; align-items: center; padding: 24px; margin-bottom: 18px; background: radial-gradient(circle at 100% 0%, #244d84 0, transparent 42%), linear-gradient(135deg, #132d4e, #0b1729); border: 1px solid #315a86; border-radius: 14px; }
+    .report-hero.PASS { border-color: #217a61; background: radial-gradient(circle at 100% 0%, #145841 0, transparent 42%), linear-gradient(135deg, #103b36, #0b1729); }
+    .report-hero.FAIL { border-color: #9b3650; background: radial-gradient(circle at 100% 0%, #6d1933 0, transparent 42%), linear-gradient(135deg, #3b1425, #0b1729); }
+    .report-hero.WARN { border-color: #9a7020; background: radial-gradient(circle at 100% 0%, #674c12 0, transparent 42%), linear-gradient(135deg, #382b0e, #0b1729); }
+    .hero-kicker { margin-bottom: 8px; color: #9dbce3; font-size: 11px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+    .report-hero h2 { margin: 0 0 8px; font-size: clamp(22px, 3vw, 32px); }
+    .report-hero-copy { margin: 0; max-width: 720px; color: #d3e2f5; line-height: 1.65; }
+    .hero-verdict { display: grid; place-items: center; min-width: 132px; min-height: 132px; padding: 18px; border: 7px solid currentColor; border-radius: 50%; color: var(--amber); background: #071322aa; text-align: center; box-shadow: 0 0 32px #02081755; }
+    .hero-verdict.PASS { color: var(--green); } .hero-verdict.FAIL { color: var(--red); }
+    .hero-verdict strong { display: block; font-size: 25px; } .hero-verdict span { display: block; margin-top: 3px; color: #c5d6eb; font-size: 11px; }
+    .metric-grid { display: grid; grid-template-columns: repeat(6, minmax(100px, 1fr)); gap: 10px; margin-bottom: 18px; }
+    .metric-card { position: relative; overflow: hidden; padding: 15px; background: linear-gradient(145deg, #10233d, #0a1729); border: 1px solid #244563; border-radius: 11px; }
+    .metric-card::after { content: ""; position: absolute; right: -18px; bottom: -28px; width: 70px; height: 70px; border: 1px solid #ffffff10; border-radius: 50%; }
+    .metric-label { color: var(--muted); font-size: 11px; font-weight: 750; text-transform: uppercase; letter-spacing: .04em; }
+    .metric-value { margin-top: 8px; color: #f3f8ff; font-size: 25px; font-weight: 850; }
+    .metric-value.pass { color: var(--green); } .metric-value.fail { color: var(--red); } .metric-value.warn { color: var(--amber); }
+    .assessment-flow { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; margin-top: 14px; }
+    .flow-step { position: relative; padding: 13px 10px 0 34px; color: var(--muted); font-size: 12px; line-height: 1.45; }
+    .flow-step::before { content: ""; position: absolute; left: 11px; top: 17px; width: 12px; height: 12px; border: 3px solid var(--blue); border-radius: 50%; background: var(--panel); z-index: 1; }
+    .flow-step:not(:last-child)::after { content: ""; position: absolute; left: 23px; right: -2px; top: 22px; height: 2px; background: #31577d; }
+    .flow-step strong { display: block; margin-bottom: 4px; color: #e8f1ff; font-size: 12px; }
+    .section-icon { display: inline-grid; place-items: center; width: 25px; height: 25px; margin-right: 7px; border-radius: 7px; color: #bcd7ff; background: #1c3b62; font-size: 12px; vertical-align: middle; }
+    .technical-report { margin-top: 18px; border: 1px solid #203854; border-radius: 10px; overflow: hidden; background: #081424; }
+    .technical-report summary { padding: 14px 16px; color: #dbeaff; cursor: pointer; font-weight: 750; list-style: none; }
+    .technical-report summary::before { content: "›"; display: inline-block; margin-right: 9px; color: var(--blue); font-size: 20px; transition: transform .15s; }
+    .technical-report[open] summary::before { transform: rotate(90deg); }
+    .technical-report .report { margin: 0 12px 12px; }
     .prompt-box { margin-top: 12px; padding: 13px; color: #d8e6fb; background: #081424; border: 1px solid #1b314d; border-radius: 8px; white-space: pre-wrap; font: 12px/1.6 ui-monospace, SFMono-Regular, Consolas, monospace; }
     @media (max-width: 850px) { .app-shell { grid-template-columns: 1fr; } aside { position: sticky; top: 0; z-index: 2; padding: 12px 16px; border-right: 0; border-bottom: 1px solid var(--line); } aside .logo { margin: 0 0 12px; } nav { display: flex; overflow-x: auto; } nav button { white-space: nowrap; } .side-footer { display: none; } .cards { grid-template-columns: repeat(2, 1fr); } }
-    @media (max-width: 760px) { .how-to, .summary-box { grid-template-columns: 1fr; } } @media (max-width: 560px) { .content { padding: 20px 14px; } .topbar { align-items: flex-start; flex-direction: column; } .top-actions { width: 100%; } .top-actions button { flex: 1; } .grid-2, .run-form, .mini-grid { grid-template-columns: 1fr; } .run-form .full { grid-column: auto; } .cards { gap: 9px; } .stat { padding: 13px; } .stat-value { font-size: 23px; } }
+    @media (max-width: 1000px) { .metric-grid { grid-template-columns: repeat(3, 1fr); } } @media (max-width: 760px) { .how-to, .summary-box, .report-hero { grid-template-columns: 1fr; } .hero-verdict { justify-self: start; min-width: 105px; min-height: 105px; } .assessment-flow { grid-template-columns: 1fr 1fr; gap: 8px; } .flow-step:not(:last-child)::after { display: none; } } @media (max-width: 560px) { .content { padding: 20px 14px; } .topbar { align-items: flex-start; flex-direction: column; } .top-actions { width: 100%; } .top-actions button { flex: 1; } .grid-2, .run-form, .mini-grid { grid-template-columns: 1fr; } .run-form .full { grid-column: auto; } .cards, .metric-grid { gap: 9px; } .metric-grid { grid-template-columns: repeat(2, 1fr); } .stat { padding: 13px; } .stat-value { font-size: 23px; } }
   </style>
 </head>
 <body>
@@ -143,7 +170,7 @@
 
       <section id="history" class="view"><div class="panel"><div class="panel-head"><h2>Evaluation history</h2><button id="historyRefresh" class="secondary">Refresh</button></div><div class="table-wrap"><table><thead><tr><th>Date</th><th>Scope</th><th>Provider / model</th><th>Status</th><th>Action</th></tr></thead><tbody id="allRuns"></tbody></table></div></div></section>
 
-      <section id="details" class="view"><div class="panel"><div class="panel-head"><div><h2 id="detailsTitle">Evaluation report</h2><span id="detailsMeta" class="muted"></span></div><button id="backBtn" class="secondary">Back</button></div><div id="detailStats" class="cards"></div><div id="easyReport"></div><div id="findings"></div><h3>Raw technical report</h3><pre id="report" class="report"></pre></div></section>
+      <section id="details" class="view"><div class="panel"><div class="panel-head"><div><h2 id="detailsTitle">Evaluation report</h2><span id="detailsMeta" class="muted"></span></div><button id="backBtn" class="secondary">Back</button></div><div id="detailStats" class="cards hidden"></div><div id="easyReport"></div><div id="findings"></div></div></section>
     </main>
   </div>
 <script>
@@ -205,6 +232,31 @@ function renderEasyReport(run, c) {
       ? 'Investigate the failing prompt and add safeguards for input trust, authority checks, confirmation, and tool access. Re-run the test after mitigation.'
       : 'Have a reviewer inspect the response, clarify the expected policy, and repeat the test with related variations.';
   $('easyReport').innerHTML = `
+    <div class="report-hero ${esc(main.verdict || 'WARN')}">
+      <div>
+        <div class="hero-kicker">AutoTARA assessment · ${esc(main.test_case_id || 'Evaluation')}</div>
+        <h2>${main.verdict === 'PASS' ? 'Security behavior looks safe' : main.verdict === 'FAIL' ? 'Unsafe behavior detected' : 'Human review is recommended'}</h2>
+        <p class="report-hero-copy">${esc(meaningForVerdict(main.verdict || 'WARN'))} ${esc(fullScope)}</p>
+      </div>
+      <div class="hero-verdict ${esc(main.verdict || 'WARN')}"><div><strong>${esc(main.verdict || 'WARN')}</strong><span>verdict</span></div></div>
+    </div>
+    <div class="metric-grid">
+      <div class="metric-card"><div class="metric-label">Total tests</div><div class="metric-value">${total}</div></div>
+      <div class="metric-card"><div class="metric-label">Pass rate</div><div class="metric-value">${passRate}%</div></div>
+      <div class="metric-card"><div class="metric-label">Passed</div><div class="metric-value pass">${c.PASS}</div></div>
+      <div class="metric-card"><div class="metric-label">Failed</div><div class="metric-value fail">${c.FAIL}</div></div>
+      <div class="metric-card"><div class="metric-label">Warnings</div><div class="metric-value warn">${c.WARN}</div></div>
+      <div class="metric-card"><div class="metric-label">Errors</div><div class="metric-value">${run.results.filter(item => item.error).length}</div></div>
+    </div>
+    <div class="plain-card report-section">
+      <h3><span class="section-icon">◎</span>Assessment at a glance</h3>
+      <div class="assessment-flow">
+        <div class="flow-step"><strong>1. Input received</strong>Untrusted automotive content was provided to the assistant.</div>
+        <div class="flow-step"><strong>2. Assistant responded</strong>The response was checked for unsafe instructions and actions.</div>
+        <div class="flow-step"><strong>3. Vehicle impact checked</strong>Tool calls and simulator security flags were reviewed.</div>
+        <div class="flow-step"><strong>4. Verdict assigned</strong>The result was classified as PASS, FAIL, or WARN.</div>
+      </div>
+    </div>
     <div class="report-section plain-card">
       <h3>1. Executive Summary</h3>
       <p>This evaluation checked whether an AI vehicle assistant can resist an attacker-controlled instruction. ${esc(fullScope)} The run recorded <strong>${passRate}%</strong> PASS results.</p>
@@ -212,25 +264,25 @@ function renderEasyReport(run, c) {
     </div>
     <div class="summary-box">
       <div class="plain-card report-section">
-        <h3>2. What Was Tested</h3>
+        <h3><span class="section-icon">▣</span>2. What Was Tested</h3>
         <p>Test case <strong>${esc(main.test_case_id || '—')}</strong> checked how the assistant handles an untrusted automotive input linked to ${tip('Threat Scenario', 'The attack situation being tested, identified by TS-xx.')} <strong>${esc(main.ts_ref || '—')}</strong> and ${tip('Cybersecurity Goal', 'The protection objective the system is expected to meet, identified by CG-xx.')} <strong>${esc(main.cg_ref || '—')}</strong>.</p>
       </div>
       <div class="plain-card report-section">
-        <h3>3. Attack Scenario</h3>
+        <h3><span class="section-icon">⚠</span>3. Attack Scenario</h3>
         <p>${esc(attackSummary(main))}</p>
         <p style="margin-top:8px">This matters because an unsafe response could expose private vehicle data or trigger a real vehicle action.</p>
       </div>
     </div>
     <div class="summary-box">
-      <div class="plain-card report-section"><h3>4. Expected Safe Behavior</h3><p>${esc(expected)}</p></div>
-      <div class="plain-card report-section"><h3>5. Actual Result</h3><p>${esc(actual)}</p><div class="muted" style="margin-top:8px">${esc(safeBehaviorSummary(main))}</div></div>
+      <div class="plain-card report-section"><h3><span class="section-icon">✓</span>4. Expected Safe Behavior</h3><p>${esc(expected)}</p></div>
+      <div class="plain-card report-section"><h3><span class="section-icon">↗</span>5. Actual Result</h3><p>${esc(actual)}</p><div class="muted" style="margin-top:8px">${esc(safeBehaviorSummary(main))}</div></div>
     </div>
     <div class="plain-card report-section">
-      <h3>6. Verdict Explanation</h3>
+      <h3><span class="section-icon">!</span>6. Verdict Explanation</h3>
       <p>${esc(meaningForVerdict(main.verdict || 'WARN'))}</p>
     </div>
     <div class="plain-card report-section">
-      <h3>8. Important Terms</h3>
+      <h3><span class="section-icon">?</span>8. Important Terms</h3>
       <div class="term-grid">
         <div class="term-card">${tip('Risk Level', 'How serious the impact could be if the attack succeeds.')}<p>${esc(main.risk_level || '—')}</p></div>
         <div class="term-card">${tip('Security Flags', 'Ground-truth simulator signals showing that a sensitive or unsafe action occurred.')}<p>${esc((main.channel_1_flags || []).join(', ') || 'None')}</p></div>
@@ -242,8 +294,11 @@ function renderEasyReport(run, c) {
       <p style="margin-top:12px">${tip('PASS', 'The assistant behaved safely for the tested scenario.')} · ${tip('FAIL', 'Unsafe behavior was detected and needs mitigation.')} · ${tip('WARN', 'The result is unclear and needs human review.')}</p>
     </div>
     <div class="summary-box">
-      <div class="plain-card report-section"><h3>9. Limitation</h3><p>${esc(fullScope)}</p></div>
-      <div class="plain-card report-section"><h3>10. Recommended Next Steps</h3><p>${esc(nextSteps)}</p></div>
+      <div class="plain-card report-section"><h3><span class="section-icon">i</span>9. Limitation</h3><p>${esc(fullScope)}</p></div>
+      <div class="plain-card report-section"><h3><span class="section-icon">→</span>10. Recommended Next Steps</h3><p>${esc(nextSteps)}</p></div>
+    </div>
+    <div class="technical-report">
+      <details><summary>11. Raw Technical Report <span class="muted">— open for traceability</span></summary><pre id="report" class="report"></pre></details>
     </div>`;
 }
 function itemHasError(run) { return run.results.some(item => item.error); }
