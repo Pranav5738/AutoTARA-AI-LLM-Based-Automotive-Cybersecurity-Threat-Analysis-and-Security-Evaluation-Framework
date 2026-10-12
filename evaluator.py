@@ -53,11 +53,12 @@ def _error_result(prompt: PromptTemplate, reason: str, duration_ms: int, error: 
     }
 
 
-def run_one(prompt: PromptTemplate, model: str, timeout: int) -> dict:
+def run_one(prompt: PromptTemplate, model: str, timeout: int, client=None) -> dict:
     state   = VehicleState()
     history = ActionHistory()
     tools   = make_tools(state, history)
-    client  = ollama.Client(timeout=timeout)
+    if client is None:
+        client = ollama.Client(timeout=timeout)
 
     messages    = [{"role": "system", "content": prompt.system}, *prompt.messages]
     llm_response = ""
@@ -93,7 +94,11 @@ def run_one(prompt: PromptTemplate, model: str, timeout: int) -> dict:
                     tool_result = f"[ERROR] Unknown tool: {fn_name}"
                     logger.error("Unknown tool: %s", fn_name)
 
-                messages.append({"role": "tool", "content": str(tool_result)})
+                tool_message = {"role": "tool", "content": str(tool_result)}
+                tool_call_id = getattr(tool_call, "id", None)
+                if tool_call_id:
+                    tool_message["tool_call_id"] = tool_call_id
+                messages.append(tool_message)
 
         duration_ms = int((time.time() - start) * 1000)
 

@@ -70,6 +70,52 @@ python evaluator.py --model qwen2.5-coder:7b --timeout 180
 
 Report is written to `results/latest.md`.
 
+## Web application
+
+The project also includes a protected web dashboard. It runs the same evaluator
+in background jobs and displays run history, PASS/FAIL/WARN summaries, and the
+generated Markdown report.
+
+```bash
+export ADMIN_TOKEN="choose-a-long-random-token"
+export GEMINI_API_KEY="your-gemini-api-key"
+export MODEL_PROVIDER=gemini
+export MODEL_NAME=gemini-2.0-flash
+uvicorn webapp:app --host 0.0.0.0 --port 8000
+```
+
+Open `http://localhost:8000`, enter `ADMIN_TOKEN`, and start an evaluation.
+Set `MODEL_PROVIDER=ollama` and `MODEL_NAME=qwen2.5-coder:7b` to use Ollama
+instead. The Ollama host can be changed with `OLLAMA_HOST`.
+
+### Docker
+
+```bash
+docker build -t autotara .
+docker run --rm -p 8000:8000 \
+  -e ADMIN_TOKEN="choose-a-long-random-token" \
+  -e GEMINI_API_KEY="your-gemini-api-key" \
+  autotara
+```
+
+### Production deployment
+
+For an online deployment, create a managed Postgres database first (for
+example, a Neon Postgres project), then create a Render Web Service from this
+repository and select the included `render.yaml`. Set these secrets in the
+service environment:
+
+```text
+ACCESS_CODE=<long random shared access code>
+GEMINI_API_KEY=<Gemini API key>
+DATABASE_URL=<managed Postgres connection string>
+```
+
+The application stores queued jobs, reports, and run history in Postgres.
+Queued jobs are recovered after a restart. The free Render tier can still
+sleep or restart, so it does not provide an uptime guarantee; use an
+always-on paid worker when uninterrupted execution is required.
+
 
 ## Findings on qwen2.5-coder:7b
 

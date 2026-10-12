@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#08111f">
+  <title>AutoTARA | Security Evaluation</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #08111f; --panel: #0d1a2d; --panel-2: #12233a;
+      --line: #203854; --text: #edf4ff; --muted: #8fa5c0;
+      --blue: #4f8cff; --blue-dark: #2767d8; --green: #34d399;
+      --red: #fb7185; --amber: #fbbf24; --shadow: 0 20px 55px #02081755;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; background: radial-gradient(circle at 90% 0%, #17345b 0, transparent 35%), var(--bg); color: var(--text); }
+    button, input, select { font: inherit; }
+    button { cursor: pointer; }
+    .hidden { display: none !important; }
+    .login { min-height: 100vh; display: grid; place-items: center; padding: 24px; }
+    .login-card { width: min(440px, 100%); padding: 38px; background: #0d1a2df2; border: 1px solid var(--line); border-radius: 22px; box-shadow: var(--shadow); }
+    .logo { display: inline-flex; align-items: center; gap: 10px; font-weight: 800; letter-spacing: .02em; }
+    .logo-mark { width: 34px; height: 34px; display: grid; place-items: center; background: linear-gradient(135deg, var(--blue), #82b4ff); border-radius: 10px; color: #061126; }
+    h1, h2, h3, p { margin-top: 0; } h1 { font-size: clamp(28px, 4vw, 42px); margin: 28px 0 10px; }
+    h2 { font-size: 20px; } h3 { font-size: 15px; margin-bottom: 8px; }
+    .muted { color: var(--muted); line-height: 1.6; }
+    .field { display: grid; gap: 8px; margin: 18px 0; color: var(--muted); font-size: 13px; font-weight: 650; }
+    input, select { width: 100%; padding: 12px 13px; color: var(--text); background: #091525; border: 1px solid #2a4667; border-radius: 9px; outline: none; }
+    input:focus, select:focus { border-color: var(--blue); box-shadow: 0 0 0 3px #4f8cff22; }
+    .primary, .secondary, .danger { border: 0; border-radius: 9px; padding: 11px 16px; color: white; font-weight: 750; }
+    .primary { background: linear-gradient(135deg, var(--blue), var(--blue-dark)); }
+    .secondary { color: #d8e6fb; background: #172b47; border: 1px solid #315174; }
+    .danger { background: #8f263c; } button:disabled { opacity: .5; cursor: wait; }
+    .error { min-height: 20px; color: #fda4af; font-size: 13px; }
+    .app-shell { min-height: 100vh; display: grid; grid-template-columns: 250px 1fr; }
+    aside { padding: 25px 18px; border-right: 1px solid var(--line); background: #091525cc; }
+    aside .logo { margin: 0 10px 42px; }
+    nav { display: grid; gap: 6px; } nav button { text-align: left; padding: 12px; border: 0; border-radius: 8px; color: var(--muted); background: transparent; }
+    nav button.active, nav button:hover { color: white; background: #1b3557; }
+    .side-footer { position: fixed; bottom: 22px; width: 210px; color: var(--muted); font-size: 12px; }
+    .content { min-width: 0; padding: 28px clamp(18px, 4vw, 54px); }
+    .topbar { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 28px; }
+    .topbar h1 { margin: 0; font-size: 25px; } .top-actions { display: flex; gap: 8px; align-items: center; }
+    .view { display: none; } .view.active { display: block; }
+    .cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 18px; }
+    .stat, .panel { background: linear-gradient(145deg, #10213a, #0c192b); border: 1px solid var(--line); border-radius: 13px; box-shadow: 0 8px 25px #02081722; }
+    .stat { padding: 18px; } .stat-label { color: var(--muted); font-size: 12px; } .stat-value { margin-top: 8px; font-size: 28px; font-weight: 800; }
+    .panel { padding: 20px; margin-bottom: 18px; } .panel-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 16px; }
+    .panel-head h2 { margin: 0; } .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+    .run-form { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0 16px; } .run-form .full { grid-column: 1 / -1; }
+    .status-line { display: flex; align-items: center; gap: 10px; min-height: 24px; color: var(--muted); font-size: 13px; }
+    .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); } .dot.running, .dot.queued { background: var(--amber); box-shadow: 0 0 12px var(--amber); } .dot.completed { background: var(--green); } .dot.failed { background: var(--red); }
+    .bar-row { display: grid; grid-template-columns: 80px 1fr 45px; align-items: center; gap: 10px; margin: 12px 0; color: var(--muted); font-size: 13px; }
+    .bar { height: 10px; overflow: hidden; background: #091525; border-radius: 99px; } .bar i { display: block; height: 100%; border-radius: inherit; background: var(--blue); }
+    .bar.pass i { background: var(--green); } .bar.fail i { background: var(--red); } .bar.warn i { background: var(--amber); }
+    table { width: 100%; border-collapse: collapse; } th, td { padding: 13px 8px; border-bottom: 1px solid #1d334d; text-align: left; font-size: 13px; } th { color: var(--muted); font-weight: 650; } td { color: #d9e5f5; }
+    .table-wrap { overflow-x: auto; } .link { color: #91baff; cursor: pointer; font-weight: 700; } .badge { display: inline-block; padding: 4px 9px; border-radius: 99px; font-size: 11px; font-weight: 800; } .badge.completed, .badge.PASS { color: #a7f3d0; background: #064e3b; } .badge.failed, .badge.FAIL { color: #fecdd3; background: #881337; } .badge.queued, .badge.running, .badge.WARN { color: #fde68a; background: #713f12; }
+    .report { max-height: 660px; overflow: auto; padding: 18px; color: #cad8ea; background: #060d18; border: 1px solid #1c304a; border-radius: 9px; white-space: pre-wrap; font: 12px/1.65 ui-monospace, SFMono-Regular, Consolas, monospace; }
+    .finding { padding: 14px; margin: 9px 0; border: 1px solid #203854; border-radius: 9px; background: #0a1728; } .finding strong { display: block; margin-bottom: 6px; }
+    @media (max-width: 850px) { .app-shell { grid-template-columns: 1fr; } aside { position: sticky; top: 0; z-index: 2; padding: 12px 16px; border-right: 0; border-bottom: 1px solid var(--line); } aside .logo { margin: 0 0 12px; } nav { display: flex; overflow-x: auto; } nav button { white-space: nowrap; } .side-footer { display: none; } .cards { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 560px) { .content { padding: 20px 14px; } .topbar { align-items: flex-start; flex-direction: column; } .top-actions { width: 100%; } .top-actions button { flex: 1; } .grid-2, .run-form { grid-template-columns: 1fr; } .run-form .full { grid-column: auto; } .cards { gap: 9px; } .stat { padding: 13px; } .stat-value { font-size: 23px; } }
+  </style>
+</head>
+<body>
+  <section id="login" class="login">
+    <div class="login-card">
+      <div class="logo"><span class="logo-mark">A</span><span>AutoTARA</span></div>
+      <h1>Security evaluation control center</h1>
+      <p class="muted">Run repeatable automotive LLM threat tests and review evidence from one protected workspace.</p>
+      <label class="field">Shared access code<input id="accessCode" type="password" autocomplete="current-password" placeholder="Enter your access code"></label>
+      <button id="loginBtn" class="primary" style="width:100%">Open dashboard</button>
+      <p id="loginError" class="error"></p>
+    </div>
+  </section>
+
+  <div id="app" class="app-shell hidden">
+    <aside>
+      <div class="logo"><span class="logo-mark">A</span><span>AutoTARA</span></div>
+      <nav>
+        <button class="active" data-view="overview">Overview</button>
+        <button data-view="new-run">New evaluation</button>
+        <button data-view="history">Run history</button>
+      </nav>
+      <div class="side-footer">Automotive LLM threat analysis<br>ISO/SAE 21434 aligned</div>
+    </aside>
+    <main class="content">
+      <header class="topbar">
+        <div><h1 id="pageTitle">Overview</h1><span class="muted">Security evaluation workspace</span></div>
+        <div class="top-actions"><button id="refreshBtn" class="secondary">Refresh</button><button id="logoutBtn" class="secondary">Lock</button></div>
+      </header>
+
+      <section id="overview" class="view active">
+        <div class="cards">
+          <div class="stat"><div class="stat-label">Total runs</div><div id="statTotal" class="stat-value">0</div></div>
+          <div class="stat"><div class="stat-label">Latest PASS</div><div id="statPass" class="stat-value" style="color:var(--green)">0</div></div>
+          <div class="stat"><div class="stat-label">Latest FAIL</div><div id="statFail" class="stat-value" style="color:var(--red)">0</div></div>
+          <div class="stat"><div class="stat-label">Latest WARN</div><div id="statWarn" class="stat-value" style="color:var(--amber)">0</div></div>
+        </div>
+        <div class="grid-2">
+          <div class="panel"><div class="panel-head"><h2>Latest evaluation</h2><span id="latestStatus" class="badge">—</span></div><div id="latestMeta" class="muted">No evaluations have been run yet.</div><div id="latestBars" style="margin-top:20px"></div></div>
+          <div class="panel"><div class="panel-head"><h2>System status</h2><span class="badge completed">ONLINE</span></div><div class="status-line"><span class="dot completed"></span>API and database reachable</div><div class="status-line"><span id="jobDot" class="dot"></span><span id="jobStatus">No active evaluation</span></div><p class="muted" style="margin-top:18px">Results are persisted in the configured database. Active jobs resume after an application restart.</p></div>
+        </div>
+        <div class="panel"><div class="panel-head"><h2>Recent evaluations</h2><a class="link" data-view-link="history">View all</a></div><div class="table-wrap"><table><thead><tr><th>Date</th><th>Scope</th><th>Model</th><th>Status</th><th></th></tr></thead><tbody id="recentRuns"></tbody></table></div></div>
+      </section>
+
+      <section id="new-run" class="view">
+        <div class="panel"><div class="panel-head"><div><h2>Start a security evaluation</h2><p class="muted">Choose the model provider and test scope. The evaluation runs in the background.</p></div></div>
+          <div class="run-form">
+            <label class="field">Provider<select id="provider"><option value="gemini">Google Gemini</option><option value="ollama">Ollama</option></select></label>
+            <label class="field">Model<input id="model" value="gemini-2.0-flash"></label>
+            <label class="field full">Scope<select id="selection"><option value="all">All test cases — complete assessment</option><option value="suite">A suite / entry point</option><option value="case">One test case</option></select></label>
+            <label id="suiteWrap" class="field full hidden">Suite<select id="suite"></select></label>
+            <label id="caseWrap" class="field full hidden">Test case<select id="case"></select></label>
+            <div class="full"><button id="runBtn" class="primary">Start evaluation</button><span id="runMessage" class="status-line" style="display:inline-flex;margin-left:12px"></span></div>
+          </div>
+        </div>
+        <div id="progressPanel" class="panel hidden"><div class="panel-head"><h2>Evaluation progress</h2><span id="progressBadge" class="badge running">QUEUED</span></div><div class="status-line"><span id="progressDot" class="dot queued"></span><span id="progressText">Waiting for worker...</span></div><div class="bar" style="margin-top:17px"><i id="progressBar" style="width:10%"></i></div></div>
+      </section>
+
+      <section id="history" class="view"><div class="panel"><div class="panel-head"><h2>Evaluation history</h2><button id="historyRefresh" class="secondary">Refresh</button></div><div class="table-wrap"><table><thead><tr><th>Date</th><th>Scope</th><th>Provider / model</th><th>Status</th><th>Action</th></tr></thead><tbody id="allRuns"></tbody></table></div></div></section>
+
+      <section id="details" class="view"><div class="panel"><div class="panel-head"><div><h2 id="detailsTitle">Evaluation report</h2><span id="detailsMeta" class="muted"></span></div><button id="backBtn" class="secondary">Back</button></div><div id="detailStats" class="cards"></div><div id="findings"></div><h3>Full report</h3><pre id="report" class="report"></pre></div></section>
+    </main>
+  </div>
+<script>
+const $ = id => document.getElementById(id);
+let accessCode = '', runs = [], activeRunId = null, pollTimer = null;
+const api = async (url, options = {}) => {
+  options.headers = {'X-Access-Code': accessCode, ...(options.headers || {})};
+  const response = await fetch(url, options);
+  const type = response.headers.get('content-type') || '';
+  const data = type.includes('text/plain') ? await response.text() : await response.json();
+  if (!response.ok) throw new Error(data.detail || data || response.statusText);
+  return data;
+};
+const showView = (view) => {
+  document.querySelectorAll('.view').forEach(x => x.classList.toggle('active', x.id === view));
+  document.querySelectorAll('nav button').forEach(x => x.classList.toggle('active', x.dataset.view === view));
+  $('pageTitle').textContent = view === 'new-run' ? 'New evaluation' : view[0].toUpperCase() + view.slice(1);
+};
+const esc = value => String(value ?? '').replace(/[&<>"']/g, x => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[x]));
+const statusBadge = status => `<span class="badge ${esc(status)}">${esc(status).toUpperCase()}</span>`;
+function setError(id, text) { $(id).textContent = text || ''; }
+function counts(results) { return results.reduce((a, x) => { const v = x.result.verdict; a[v] = (a[v] || 0) + 1; return a; }, {PASS:0, FAIL:0, WARN:0}); }
+function renderBars(c) { const max = Math.max(c.PASS, c.FAIL, c.WARN, 1); return ['PASS','FAIL','WARN'].map(v => `<div class="bar-row"><span>${v}</span><span class="bar ${v.toLowerCase()}"><i style="width:${c[v] / max * 100}%"></i></span><strong>${c[v]}</strong></div>`).join(''); }
+function renderRows(target, list) { $(target).innerHTML = list.length ? list.map(x => `<tr><td>${new Date(x.created_at).toLocaleString()}</td><td>${esc(x.filter_desc)}</td><td>${esc(x.provider)} / ${esc(x.model)}</td><td>${statusBadge(x.status)}</td><td><a class="link" onclick="openRun('${x.id}')">View</a></td></tr>`).join('') : '<tr><td colspan="5" class="muted">No evaluations yet.</td></tr>'; }
+async function refresh() {
+  runs = await api('/api/runs'); renderRows('recentRuns', runs.slice(0, 5)); renderRows('allRuns', runs);
+  $('statTotal').textContent = runs.length;
+  const latest = runs.find(x => x.status === 'completed');
+  if (!latest) return;
+  const detail = await api('/api/runs/' + latest.id), c = counts(detail.results);
+  $('statPass').textContent = c.PASS; $('statFail').textContent = c.FAIL; $('statWarn').textContent = c.WARN;
+  $('latestStatus').outerHTML = `<span id="latestStatus" class="badge ${latest.status}">${latest.status.toUpperCase()}</span>`;
+  $('latestMeta').textContent = `${latest.filter_desc} • ${latest.provider} • ${new Date(latest.created_at).toLocaleString()}`;
+  $('latestBars').innerHTML = renderBars(c);
+}
+async function openRun(id) {
+  const run = await api('/api/runs/' + id); showView('details');
+  $('detailsTitle').textContent = `${run.filter_desc} report`;
+  $('detailsMeta').textContent = `${run.provider} / ${run.model} • ${new Date(run.created_at).toLocaleString()}`;
+  if (run.status !== 'completed') { $('detailStats').innerHTML = ''; $('findings').innerHTML = `<p class="muted">${esc(run.error || 'This evaluation is still running.')}</p>`; $('report').textContent = ''; return; }
+  const c = counts(run.results); $('detailStats').innerHTML = ['PASS','FAIL','WARN'].map(v => `<div class="stat"><div class="stat-label">${v}</div><div class="stat-value" style="color:var(--${v === 'PASS' ? 'green' : v === 'FAIL' ? 'red' : 'amber'})">${c[v]}</div></div>`).join('');
+  $('findings').innerHTML = run.results.map(x => `<div class="finding"><strong>${statusBadge(x.result.verdict)} ${esc(x.result.test_case_id)} <span class="muted">${esc(x.result.risk_level)} risk</span></strong><span class="muted">${esc(x.result.rationale)}</span></div>`).join('');
+  $('report').textContent = await api('/api/runs/' + id + '/report');
+}
+async function loadOptions() {
+  const data = await api('/api/options'); $('provider').value = data.default_provider; $('model').value = data.default_model;
+  $('suite').innerHTML = data.suites.map(x => `<option value="${esc(x.id)}">${esc(x.name)}</option>`).join('');
+  $('case').innerHTML = data.cases.map(x => `<option value="${esc(x.id)}">${esc(x.id)} — ${esc(x.name)} (${esc(x.risk_level)})</option>`).join('');
+  await refresh();
+}
+$('loginBtn').onclick = async () => { accessCode = $('accessCode').value.trim(); if (!accessCode) return setError('loginError', 'Enter the access code.'); try { await loadOptions(); $('login').classList.add('hidden'); $('app').classList.remove('hidden'); } catch (e) { accessCode = ''; setError('loginError', e.message); } };
+$('accessCode').onkeydown = e => { if (e.key === 'Enter') $('loginBtn').click(); };
+$('logoutBtn').onclick = () => { accessCode = ''; $('app').classList.add('hidden'); $('login').classList.remove('hidden'); $('accessCode').value = ''; };
+document.querySelectorAll('nav button').forEach(x => x.onclick = () => showView(x.dataset.view));
+document.querySelectorAll('[data-view-link]').forEach(x => x.onclick = () => showView(x.dataset.viewLink));
+$('backBtn').onclick = () => showView('history'); $('refreshBtn').onclick = refresh; $('historyRefresh').onclick = refresh;
+$('selection').onchange = () => { $('suiteWrap').classList.toggle('hidden', $('selection').value !== 'suite'); $('caseWrap').classList.toggle('hidden', $('selection').value !== 'case'); };
+$('runBtn').onclick = async () => { $('runBtn').disabled = true; $('progressPanel').classList.remove('hidden'); const selection = $('selection').value; const body = {provider:$('provider').value, model:$('model').value}; if (selection === 'suite') body.suite = $('suite').value; if (selection === 'case') body.test_case_id = $('case').value; try { const run = await api('/api/runs', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)}); activeRunId = run.id; $('runMessage').textContent = 'Evaluation queued'; poll(); } catch (e) { $('runMessage').textContent = e.message; $('runBtn').disabled = false; } };
+async function poll() { if (!activeRunId) return; const run = await api('/api/runs/' + activeRunId); $('progressBadge').textContent = run.status.toUpperCase(); $('progressBadge').className = 'badge ' + run.status; $('progressDot').className = 'dot ' + run.status; $('progressText').textContent = run.status === 'completed' ? 'Evaluation complete.' : run.status === 'failed' ? run.error : run.status === 'running' ? 'Worker is evaluating test cases...' : 'Waiting for worker...'; $('progressBar').style.width = run.status === 'completed' || run.status === 'failed' ? '100%' : run.status === 'running' ? '60%' : '15%'; await refresh(); if (run.status === 'completed' || run.status === 'failed') { $('runBtn').disabled = false; if (run.status === 'completed') openRun(run.id); return; } pollTimer = setTimeout(poll, 2500); }
+</script>
+</body>
+</html>
