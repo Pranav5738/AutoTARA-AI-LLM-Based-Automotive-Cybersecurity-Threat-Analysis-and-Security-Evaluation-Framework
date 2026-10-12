@@ -36,7 +36,7 @@ app.mount("/static", StaticFiles(directory=STATIC_PATH), name="static")
 
 class RunRequest(BaseModel):
     provider: str = Field(default_factory=lambda: os.getenv("MODEL_PROVIDER", "gemini"))
-    model: str = Field(default_factory=lambda: os.getenv("MODEL_NAME", "gemini-2.0-flash"))
+    model: str = Field(default_factory=lambda: os.getenv("MODEL_NAME", "gemini-3.8-flash"))
     suite: str | None = None
     test_case_id: str | None = None
     timeout: int = Field(default=DEFAULT_TIMEOUT_SEC, ge=10, le=600)
@@ -190,7 +190,7 @@ def options() -> dict[str, Any]:
     return {
         "providers": ["gemini", "ollama"],
         "default_provider": os.getenv("MODEL_PROVIDER", "gemini"),
-        "default_model": os.getenv("MODEL_NAME", "gemini-2.0-flash"),
+        "default_model": os.getenv("MODEL_NAME", "gemini-3.8-flash"),
         "suites": [{"id": suite.id, "name": suite.name} for suite in suites],
         "cases": [{"id": case.id, "name": case.name, "risk_level": case.risk_level.value} for case in cases],
     }

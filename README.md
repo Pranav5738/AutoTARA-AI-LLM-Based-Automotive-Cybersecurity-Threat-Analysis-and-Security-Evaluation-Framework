@@ -79,7 +79,7 @@ generated Markdown report.
 ```bash
 export GEMINI_API_KEY="your-gemini-api-key"
 export MODEL_PROVIDER=gemini
-export MODEL_NAME=gemini-2.0-flash
+export MODEL_NAME=gemini-3.8-flash
 uvicorn webapp:app --host 0.0.0.0 --port 8000
 ```
 

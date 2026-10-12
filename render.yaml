@@ -12,7 +12,7 @@ services:
       - key: MODEL_PROVIDER
         value: gemini
       - key: MODEL_NAME
-        value: gemini-2.0-flash
+        value: gemini-3.8-flash
       - key: MAX_CONCURRENT_RUNS
         value: "1"
       - key: MAX_RUNS_PER_MINUTE
