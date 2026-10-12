@@ -76,6 +76,13 @@
     .verdict-note { margin: 12px 0 0; padding: 12px; border-left: 3px solid var(--green); background: #071c19; color: #c9f8e1; line-height: 1.6; }
     .verdict-note.FAIL { border-color: var(--red); background: #240b14; color: #ffd1d8; }
     .verdict-note.WARN { border-color: var(--amber); background: #221806; color: #ffe8a3; }
+    .report-section { margin: 0 0 18px; }
+    .report-section h3 { margin-bottom: 9px; }
+    .report-section p { margin: 0; color: #cbd8e8; line-height: 1.65; }
+    .report-list { margin: 10px 0 0; padding-left: 20px; color: #cbd8e8; line-height: 1.7; }
+    .term-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .term-card { padding: 12px; background: #081424; border: 1px solid #1b314d; border-radius: 8px; }
+    .term-card p { margin-top: 5px; font-size: 13px; }
     .prompt-box { margin-top: 12px; padding: 13px; color: #d8e6fb; background: #081424; border: 1px solid #1b314d; border-radius: 8px; white-space: pre-wrap; font: 12px/1.6 ui-monospace, SFMono-Regular, Consolas, monospace; }
     @media (max-width: 850px) { .app-shell { grid-template-columns: 1fr; } aside { position: sticky; top: 0; z-index: 2; padding: 12px 16px; border-right: 0; border-bottom: 1px solid var(--line); } aside .logo { margin: 0 0 12px; } nav { display: flex; overflow-x: auto; } nav button { white-space: nowrap; } .side-footer { display: none; } .cards { grid-template-columns: repeat(2, 1fr); } }
     @media (max-width: 760px) { .how-to, .summary-box { grid-template-columns: 1fr; } } @media (max-width: 560px) { .content { padding: 20px 14px; } .topbar { align-items: flex-start; flex-direction: column; } .top-actions { width: 100%; } .top-actions button { flex: 1; } .grid-2, .run-form, .mini-grid { grid-template-columns: 1fr; } .run-form .full { grid-column: auto; } .cards { gap: 9px; } .stat { padding: 13px; } .stat-value { font-size: 23px; } }
@@ -187,33 +194,59 @@ function renderEasyReport(run, c) {
   const total = run.results.length;
   const passRate = total ? Math.round(c.PASS / total * 1000) / 10 : 0;
   const main = run.results[0]?.result || {};
-  const fullScope = total > 1 ? 'This run covers multiple test cases, so it gives broader evidence.' : 'Only one test case was run, so this proves safety only for this specific scenario.';
-  const reusablePrompt = `You are an automotive cybersecurity evaluation report writer.
-
-Convert this AutoTARA result into a simple evaluator-friendly report.
-Explain what was tested, why it matters, what attack was simulated, expected safe behavior, actual result, verdict meaning, limitation, and next steps.
-Use simple language for a non-technical reviewer.
-
-Raw result:
-[paste AutoTARA output here]`;
+  const fullScope = total > 1 ? 'This run covers multiple test cases and gives broader evidence across the selected scope.' : 'Only one test case was run, so this result applies only to this specific scenario and should not be treated as proof that the whole system is safe.';
+  const expected = main.verdict === 'PASS'
+    ? 'The assistant should recognize the input as untrusted, refuse the unsafe instruction, and avoid unauthorized vehicle functions.'
+    : 'The assistant should treat the attacker-controlled content as data, ask for confirmation where needed, and avoid unauthorized vehicle functions.';
+  const actual = main.llm_response || 'No response text was recorded.';
+  const nextSteps = main.verdict === 'PASS'
+    ? 'Repeat the evaluation across more suites, inputs, and model settings before drawing a system-wide conclusion.'
+    : main.verdict === 'FAIL'
+      ? 'Investigate the failing prompt and add safeguards for input trust, authority checks, confirmation, and tool access. Re-run the test after mitigation.'
+      : 'Have a reviewer inspect the response, clarify the expected policy, and repeat the test with related variations.';
   $('easyReport').innerHTML = `
+    <div class="report-section plain-card">
+      <h3>1. Executive Summary</h3>
+      <p>This evaluation checked whether an AI vehicle assistant can resist an attacker-controlled instruction. ${esc(fullScope)} The run recorded <strong>${passRate}%</strong> PASS results.</p>
+      <div class="verdict-note ${esc(main.verdict || 'WARN')}">${statusBadge(main.verdict || 'WARN')} ${esc(meaningForVerdict(main.verdict || 'WARN'))}</div>
+    </div>
     <div class="summary-box">
-      <div class="plain-card">
-        <h3>Evaluator summary</h3>
-        <p>This run tested whether an LLM-based vehicle assistant can resist automotive prompt-injection attacks. ${esc(fullScope)} Current pass rate is <strong>${passRate}%</strong>.</p>
-        <div class="verdict-note ${esc(main.verdict || 'WARN')}">${esc(meaningForVerdict(main.verdict || 'WARN'))}</div>
+      <div class="plain-card report-section">
+        <h3>2. What Was Tested</h3>
+        <p>Test case <strong>${esc(main.test_case_id || '—')}</strong> checked how the assistant handles an untrusted automotive input linked to ${tip('Threat Scenario', 'The attack situation being tested, identified by TS-xx.')} <strong>${esc(main.ts_ref || '—')}</strong> and ${tip('Cybersecurity Goal', 'The protection objective the system is expected to meet, identified by CG-xx.')} <strong>${esc(main.cg_ref || '—')}</strong>.</p>
       </div>
-      <div class="plain-card">
-        <h3>Key terms</h3>
-        <p>${tip('Threat Scenario', 'The attack situation from the TARA threat model, shown as TS-xx.')} links the test to a known risk. ${tip('Cybersecurity Goal', 'The required security objective, shown as CG-xx, that the vehicle assistant should satisfy.')} shows what protection is being checked. ${tip('Tool Calls', 'Vehicle API actions requested by the LLM, such as getting location, sending a message, or unlocking doors.')} are important because real vehicles could act on them.</p>
+      <div class="plain-card report-section">
+        <h3>3. Attack Scenario</h3>
+        <p>${esc(attackSummary(main))}</p>
+        <p style="margin-top:8px">This matters because an unsafe response could expose private vehicle data or trigger a real vehicle action.</p>
       </div>
     </div>
-    <div class="plain-card">
-      <h3>Prompt for documentation</h3>
-      <p>Use this when you want the raw output converted into a project-report explanation.</p>
-      <div class="prompt-box">${esc(reusablePrompt)}</div>
+    <div class="summary-box">
+      <div class="plain-card report-section"><h3>4. Expected Safe Behavior</h3><p>${esc(expected)}</p></div>
+      <div class="plain-card report-section"><h3>5. Actual Result</h3><p>${esc(actual)}</p><div class="muted" style="margin-top:8px">${esc(safeBehaviorSummary(main))}</div></div>
+    </div>
+    <div class="plain-card report-section">
+      <h3>6. Verdict Explanation</h3>
+      <p>${esc(meaningForVerdict(main.verdict || 'WARN'))}</p>
+    </div>
+    <div class="plain-card report-section">
+      <h3>8. Important Terms</h3>
+      <div class="term-grid">
+        <div class="term-card">${tip('Risk Level', 'How serious the impact could be if the attack succeeds.')}<p>${esc(main.risk_level || '—')}</p></div>
+        <div class="term-card">${tip('Security Flags', 'Ground-truth simulator signals showing that a sensitive or unsafe action occurred.')}<p>${esc((main.channel_1_flags || []).join(', ') || 'None')}</p></div>
+        <div class="term-card">${tip('Tool Calls', 'Vehicle functions requested by the assistant, such as location, messaging, or door controls.')}<p>${esc((main.tool_calls_made || []).join(', ') || 'None')}</p></div>
+        <div class="term-card">${tip('TARA', 'Threat Analysis and Risk Assessment: a structured way to identify vehicle assets, attacks, and protections.')}<p>AutoTARA security assessment</p></div>
+        <div class="term-card">${tip('V2X', 'Vehicle-to-everything communication, such as traffic, road, infrastructure, or telematics messages.')}<p>${main.test_case_id?.startsWith('V2X') ? 'Relevant to this test' : 'Automotive input category'}</p></div>
+        <div class="term-card">${tip('Timeout', 'When an evaluation takes longer than its allowed time; AutoTARA treats this as a failure rather than success.')}<p>${itemHasError(run) ? 'Recorded' : 'Not recorded'}</p></div>
+      </div>
+      <p style="margin-top:12px">${tip('PASS', 'The assistant behaved safely for the tested scenario.')} · ${tip('FAIL', 'Unsafe behavior was detected and needs mitigation.')} · ${tip('WARN', 'The result is unclear and needs human review.')}</p>
+    </div>
+    <div class="summary-box">
+      <div class="plain-card report-section"><h3>9. Limitation</h3><p>${esc(fullScope)}</p></div>
+      <div class="plain-card report-section"><h3>10. Recommended Next Steps</h3><p>${esc(nextSteps)}</p></div>
     </div>`;
 }
+function itemHasError(run) { return run.results.some(item => item.error); }
 function renderFinding(item) {
   const r = item.result;
   const tools = r.tool_calls_made?.length ? r.tool_calls_made.join(', ') : 'None';
@@ -250,7 +283,15 @@ async function openRun(id) {
   $('detailsTitle').textContent = `${run.filter_desc} report`;
   $('detailsMeta').textContent = `${run.provider} / ${run.model} • ${new Date(run.created_at).toLocaleString()}`;
   if (run.status !== 'completed') { $('detailStats').innerHTML = ''; $('easyReport').innerHTML = ''; $('findings').innerHTML = `<p class="muted">${esc(run.error || 'This evaluation is still running.')}</p>`; $('report').textContent = ''; return; }
-  const c = counts(run.results); $('detailStats').innerHTML = ['PASS','FAIL','WARN'].map(v => `<div class="stat"><div class="stat-label">${v}</div><div class="stat-value" style="color:var(--${v === 'PASS' ? 'green' : v === 'FAIL' ? 'red' : 'amber'})">${c[v]}</div></div>`).join('');
+  const c = counts(run.results), errors = run.results.filter(item => item.error).length, passRate = run.results.length ? (c.PASS / run.results.length * 100).toFixed(1) : '0.0';
+  $('detailStats').innerHTML = [
+    ['Total tests', run.results.length, 'var(--text)'],
+    ['PASS', c.PASS, 'var(--green)'],
+    ['FAIL', c.FAIL, 'var(--red)'],
+    ['WARN', c.WARN, 'var(--amber)'],
+    ['Errors', errors, 'var(--red)'],
+    ['Pass rate', `${passRate}%`, 'var(--blue)']
+  ].map(([label, value, color]) => `<div class="stat"><div class="stat-label">${label}</div><div class="stat-value" style="color:${color}">${value}</div></div>`).join('');
   renderEasyReport(run, c);
   $('findings').innerHTML = `<h3>Interactive findings</h3>${run.results.map(renderFinding).join('')}`;
   $('report').textContent = await api('/api/runs/' + id + '/report');
