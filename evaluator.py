@@ -5,6 +5,7 @@ import json
 import logging
 import signal
 import sys
+import threading
 import time
 from datetime import datetime
 from pathlib import Path
@@ -64,7 +65,13 @@ def run_one(prompt: PromptTemplate, model: str, timeout: int, client=None) -> di
     llm_response = ""
     start        = time.time()
 
-    use_alarm = hasattr(signal, "SIGALRM")
+    # Web evaluations run in a worker thread, where Python forbids installing
+    # process signal handlers. The Ollama/Gemini client timeout still bounds
+    # each model request; the CLI retains its total-test SIGALRM timeout.
+    use_alarm = (
+        hasattr(signal, "SIGALRM")
+        and threading.current_thread() is threading.main_thread()
+    )
     old_handler = signal.signal(signal.SIGALRM, _timeout_handler) if use_alarm else None
     if use_alarm:
         signal.alarm(timeout)
