@@ -7,7 +7,10 @@ import urllib.request
 from types import SimpleNamespace
 from typing import Any
 
+from dotenv import load_dotenv
 import ollama
+
+load_dotenv()
 
 
 class ModelClientError(RuntimeError):

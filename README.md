@@ -77,23 +77,26 @@ in background jobs and displays run history, PASS/FAIL/WARN summaries, and the
 generated Markdown report.
 
 ```bash
-export ADMIN_TOKEN="choose-a-long-random-token"
 export GEMINI_API_KEY="your-gemini-api-key"
 export MODEL_PROVIDER=gemini
 export MODEL_NAME=gemini-2.0-flash
 uvicorn webapp:app --host 0.0.0.0 --port 8000
 ```
 
-Open `http://localhost:8000`, enter `ADMIN_TOKEN`, and start an evaluation.
+Open `http://localhost:8000` and start an evaluation.
 Set `MODEL_PROVIDER=ollama` and `MODEL_NAME=qwen2.5-coder:7b` to use Ollama
 instead. The Ollama host can be changed with `OLLAMA_HOST`.
+
+For local setup, copy `.env.example` to `.env`, replace the placeholder values,
+and start the server. `.env` is ignored by Git and must never be committed.
+Render does not read files from `.env`; configure the same values in its
+Environment Variables section.
 
 ### Docker
 
 ```bash
 docker build -t autotara .
 docker run --rm -p 8000:8000 \
-  -e ADMIN_TOKEN="choose-a-long-random-token" \
   -e GEMINI_API_KEY="your-gemini-api-key" \
   autotara
 ```
@@ -106,7 +109,6 @@ repository and select the included `render.yaml`. Set these secrets in the
 service environment:
 
 ```text
-ACCESS_CODE=<long random shared access code>
 GEMINI_API_KEY=<Gemini API key>
 DATABASE_URL=<managed Postgres connection string>
 ```

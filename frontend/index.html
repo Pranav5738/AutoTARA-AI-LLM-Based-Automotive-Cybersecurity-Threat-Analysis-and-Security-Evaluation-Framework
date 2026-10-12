@@ -64,18 +64,7 @@
   </style>
 </head>
 <body>
-  <section id="login" class="login">
-    <div class="login-card">
-      <div class="logo"><span class="logo-mark">A</span><span>AutoTARA</span></div>
-      <h1>Security evaluation control center</h1>
-      <p class="muted">Run repeatable automotive LLM threat tests and review evidence from one protected workspace.</p>
-      <label class="field">Shared access code<input id="accessCode" type="password" autocomplete="current-password" placeholder="Enter your access code"></label>
-      <button id="loginBtn" class="primary" style="width:100%">Open dashboard</button>
-      <p id="loginError" class="error"></p>
-    </div>
-  </section>
-
-  <div id="app" class="app-shell hidden">
+  <div id="app" class="app-shell">
     <aside>
       <div class="logo"><span class="logo-mark">A</span><span>AutoTARA</span></div>
       <nav>
@@ -88,7 +77,7 @@
     <main class="content">
       <header class="topbar">
         <div><h1 id="pageTitle">Overview</h1><span class="muted">Security evaluation workspace</span></div>
-        <div class="top-actions"><button id="refreshBtn" class="secondary">Refresh</button><button id="logoutBtn" class="secondary">Lock</button></div>
+        <div class="top-actions"><button id="refreshBtn" class="secondary">Refresh</button></div>
       </header>
 
       <section id="overview" class="view active">
@@ -126,9 +115,9 @@
   </div>
 <script>
 const $ = id => document.getElementById(id);
-let accessCode = '', runs = [], activeRunId = null, pollTimer = null;
+let runs = [], activeRunId = null, pollTimer = null;
 const api = async (url, options = {}) => {
-  options.headers = {'X-Access-Code': accessCode, ...(options.headers || {})};
+  options.headers = {...(options.headers || {})};
   const response = await fetch(url, options);
   const type = response.headers.get('content-type') || '';
   const data = type.includes('text/plain') ? await response.text() : await response.json();
@@ -172,15 +161,13 @@ async function loadOptions() {
   $('case').innerHTML = data.cases.map(x => `<option value="${esc(x.id)}">${esc(x.id)} — ${esc(x.name)} (${esc(x.risk_level)})</option>`).join('');
   await refresh();
 }
-$('loginBtn').onclick = async () => { accessCode = $('accessCode').value.trim(); if (!accessCode) return setError('loginError', 'Enter the access code.'); try { await loadOptions(); $('login').classList.add('hidden'); $('app').classList.remove('hidden'); } catch (e) { accessCode = ''; setError('loginError', e.message); } };
-$('accessCode').onkeydown = e => { if (e.key === 'Enter') $('loginBtn').click(); };
-$('logoutBtn').onclick = () => { accessCode = ''; $('app').classList.add('hidden'); $('login').classList.remove('hidden'); $('accessCode').value = ''; };
 document.querySelectorAll('nav button').forEach(x => x.onclick = () => showView(x.dataset.view));
 document.querySelectorAll('[data-view-link]').forEach(x => x.onclick = () => showView(x.dataset.viewLink));
 $('backBtn').onclick = () => showView('history'); $('refreshBtn').onclick = refresh; $('historyRefresh').onclick = refresh;
 $('selection').onchange = () => { $('suiteWrap').classList.toggle('hidden', $('selection').value !== 'suite'); $('caseWrap').classList.toggle('hidden', $('selection').value !== 'case'); };
 $('runBtn').onclick = async () => { $('runBtn').disabled = true; $('progressPanel').classList.remove('hidden'); const selection = $('selection').value; const body = {provider:$('provider').value, model:$('model').value}; if (selection === 'suite') body.suite = $('suite').value; if (selection === 'case') body.test_case_id = $('case').value; try { const run = await api('/api/runs', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)}); activeRunId = run.id; $('runMessage').textContent = 'Evaluation queued'; poll(); } catch (e) { $('runMessage').textContent = e.message; $('runBtn').disabled = false; } };
 async function poll() { if (!activeRunId) return; const run = await api('/api/runs/' + activeRunId); $('progressBadge').textContent = run.status.toUpperCase(); $('progressBadge').className = 'badge ' + run.status; $('progressDot').className = 'dot ' + run.status; $('progressText').textContent = run.status === 'completed' ? 'Evaluation complete.' : run.status === 'failed' ? run.error : run.status === 'running' ? 'Worker is evaluating test cases...' : 'Waiting for worker...'; $('progressBar').style.width = run.status === 'completed' || run.status === 'failed' ? '100%' : run.status === 'running' ? '60%' : '15%'; await refresh(); if (run.status === 'completed' || run.status === 'failed') { $('runBtn').disabled = false; if (run.status === 'completed') openRun(run.id); return; } pollTimer = setTimeout(poll, 2500); }
+loadOptions().catch(e => $('runMessage').textContent = e.message);
 </script>
 </body>
 </html>

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import hmac
 import json
 import os
 import sqlite3
@@ -10,7 +9,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from fastapi import Depends, FastAPI, Header, HTTPException
+from dotenv import load_dotenv
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -19,12 +19,13 @@ from evaluator import DEFAULT_TIMEOUT_SEC, generate_report, run_one
 from model_client import create_model_client
 from yaml_loader import get_all_prompts, get_prompt_by_id, get_prompts_by_suite, load_test_suites
 
+load_dotenv()
+
 ROOT = Path(__file__).parent
 YAML_PATH = ROOT / "tests" / "test_suites.yaml"
 STATIC_PATH = ROOT / "frontend"
 DATABASE_URL = os.getenv("DATABASE_URL", "")
 DATABASE_PATH = Path(os.getenv("DATABASE_PATH", str(ROOT / "results" / "runs.db")))
-ACCESS_CODE = os.getenv("ACCESS_CODE", os.getenv("ADMIN_TOKEN", ""))
 MAX_CONCURRENT_RUNS = int(os.getenv("MAX_CONCURRENT_RUNS", "1"))
 MAX_RUNS_PER_MINUTE = int(os.getenv("MAX_RUNS_PER_MINUTE", "3"))
 executor = ThreadPoolExecutor(max_workers=MAX_CONCURRENT_RUNS)
@@ -114,19 +115,6 @@ def init_database() -> None:
         db.commit()
 
 
-def require_access(
-    authorization: str | None = Header(default=None),
-    x_access_code: str | None = Header(default=None),
-) -> None:
-    if not ACCESS_CODE:
-        raise HTTPException(status_code=503, detail="ACCESS_CODE is not configured")
-    supplied = x_access_code
-    if authorization and authorization.lower().startswith("bearer "):
-        supplied = authorization[7:]
-    if not supplied or not hmac.compare_digest(supplied, ACCESS_CODE):
-        raise HTTPException(status_code=401, detail="Invalid access code")
-
-
 def enforce_rate_limit() -> None:
     current = datetime.now(timezone.utc).timestamp()
     recent_runs[:] = [stamp for stamp in recent_runs if current - stamp < 60]
@@ -195,7 +183,7 @@ def health() -> dict[str, str]:
     return {"status": "ok", "service": "autotara"}
 
 
-@app.get("/api/options", dependencies=[Depends(require_access)])
+@app.get("/api/options")
 def options() -> dict[str, Any]:
     suites = load_test_suites(YAML_PATH).test_suites
     cases = [case for suite in suites for case in suite.cases]
@@ -208,7 +196,7 @@ def options() -> dict[str, Any]:
     }
 
 
-@app.post("/api/runs", dependencies=[Depends(require_access)])
+@app.post("/api/runs")
 def create_run(request: RunRequest) -> dict[str, str]:
     enforce_rate_limit()
     try:
@@ -226,7 +214,7 @@ def create_run(request: RunRequest) -> dict[str, str]:
     return {"id": run_id, "status": "queued"}
 
 
-@app.get("/api/runs", dependencies=[Depends(require_access)])
+@app.get("/api/runs")
 def list_runs() -> list[dict[str, Any]]:
     rows = fetch_all(
         "SELECT id,status,provider,model,filter_desc,created_at,completed_at,error "
@@ -235,7 +223,7 @@ def list_runs() -> list[dict[str, Any]]:
     return [dict(row) for row in rows]
 
 
-@app.get("/api/runs/{run_id}", dependencies=[Depends(require_access)])
+@app.get("/api/runs/{run_id}")
 def get_run(run_id: str) -> dict[str, Any]:
     row = fetch_one("SELECT * FROM runs WHERE id=?", (run_id,))
     if row is None:
@@ -247,7 +235,7 @@ def get_run(run_id: str) -> dict[str, Any]:
     return result
 
 
-@app.get("/api/runs/{run_id}/report", dependencies=[Depends(require_access)])
+@app.get("/api/runs/{run_id}/report")
 def get_report(run_id: str) -> PlainTextResponse:
     row = fetch_one("SELECT report FROM runs WHERE id=?", (run_id,))
     if row is None:
